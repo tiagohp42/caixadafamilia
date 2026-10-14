@@ -256,6 +256,18 @@
       </div>
 
       <div class="setsec">
+        <h3>Importar e fazer cópia</h3>
+        <p>Traga lançamentos de um arquivo de cópia (.json), como o do painel antigo. Lançamentos que já estão no app não são duplicados.</p>
+        <div class="filerow">
+          <label class="ghost filebtn" for="imp-file">Escolher arquivo para importar</label>
+          <input type="file" id="imp-file" class="sr" accept=".json,application/json">
+          <button type="button" class="ghost" id="exp-btn">Baixar cópia dos dados</button>
+        </div>
+        <p class="hint" id="imp-status" hidden></p>
+        <button type="button" class="primary small" id="imp-btn" hidden>Importar</button>
+      </div>
+
+      <div class="setsec">
         <h3>Conta</h3>
         <p id="whoami"></p>
         <button type="button" class="ghost" id="logoutBtn">Sair deste aparelho</button>

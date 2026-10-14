@@ -251,7 +251,10 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .setsec.first{border-top:0;padding-top:0}
 .setsec h3{margin:0;font-size:15px;font-weight:600}
 .setsec p{margin:0;font-size:13px;color:var(--muted)}
-.setsec .ghost{align-self:flex-start}
+.setsec .ghost,.setsec .primary.small{align-self:flex-start}
+.filerow{display:flex;flex-wrap:wrap;gap:8px}
+.filebtn{display:inline-flex;align-items:center;cursor:pointer}
+.filerow:focus-within .filebtn{outline:2px solid var(--accent);outline-offset:2px}
 .pct{display:grid;grid-template-columns:minmax(0,1fr) 96px;align-items:center;gap:10px;font-size:14px}
 .pct .inp,.limrow .inp{display:flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:9px;background:var(--bg);padding:0 10px;min-width:0}
 .pct .inp input,.limrow .inp input{border:0;background:transparent;width:100%;min-width:0;min-height:44px;font-family:var(--f-num);font-size:16px;text-align:right;outline:none;-webkit-appearance:none;appearance:none}

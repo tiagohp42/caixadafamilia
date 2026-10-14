@@ -819,6 +819,7 @@
     $("#d-pct").value = String(dizimoPct()).replace(".", ",");
     $("#p-dia").value = String(startDay());
     $("#whoami").textContent = S.me ? "Você entrou como " + S.me.nome + "." : "";
+    resetImport();
     buildLimitInputs();
     openSheet("setSheet");
     if (focusId) setTimeout(function(){ var f = document.getElementById(focusId); if (f) f.focus(); }, 60);
@@ -861,6 +862,97 @@
       if (startDay() !== oldStart && !S.navigated) S.month = periodOf(todayISO());
       closeSheets(); render(); toast("Ajustes salvos.");
     }).catch(handleWriteErr).finally(function(){ btn.disabled = false; });
+  });
+
+  /* ================= importar e fazer cópia ================= */
+  var importItems = null;
+  var ID_OK = /^[A-Za-z0-9_-]{8,64}$/;
+  function importStatus(msg){ var s = $("#imp-status"); s.textContent = msg || ""; s.hidden = !msg; }
+  function resetImport(){ importItems = null; importStatus(""); $("#imp-btn").hidden = true; $("#imp-file").value = ""; }
+  function cleanImported(x){
+    if (!x || typeof x !== "object") return null;
+    var d = x.data && typeof x.data === "object" && !x.tipo ? Object.assign({ id: x.id }, x.data) : x; // aceita também o formato {id, data:{...}}
+    if (["entrada", "saida", "retirada"].indexOf(d.tipo) < 0) return null;
+    if (typeof d.valor !== "number" || !(d.valor > 0) || !/^\d{4}-\d{2}-\d{2}$/.test(String(d.data || ""))) return null;
+    var lado = d.lado === "empresa" ? "base" : d.lado;
+    var o = {
+      id: ID_OK.test(String(d.id || "")) ? String(d.id) : uid(),
+      tipo: d.tipo,
+      lado: d.tipo === "retirada" ? null : lado,
+      empresa: d.tipo === "retirada" ? (LADOS[d.empresa] ? d.empresa : "base") : null,
+      valor: Math.round(d.valor),
+      data: d.data,
+      categoria: String(d.categoria || "Outros").slice(0, 60),
+      descricao: String(d.descricao || "").slice(0, 120),
+      status: d.status === "pendente" ? "pendente" : "pago",
+      pagoEm: d.status === "pendente" ? null : (/^\d{4}-\d{2}-\d{2}$/.test(String(d.pagoEm || "")) ? d.pagoEm : d.data),
+      fixo: d.fixo === true,
+      valorOriginal: typeof d.valorOriginal === "number" && d.valorOriginal > 0 ? Math.round(d.valorOriginal) : null,
+      origem: ID_OK.test(String(d.origem || "")) ? String(d.origem) : null
+    };
+    if (o.tipo !== "retirada" && !LADOS[o.lado]) return null;
+    return o;
+  }
+  $("#imp-file").addEventListener("change", function(){
+    var f = this.files && this.files[0];
+    importItems = null; $("#imp-btn").hidden = true;
+    if (!f) return;
+    if (f.size > 3 * 1024 * 1024){ importStatus("Arquivo grande demais para importar."); return; }
+    var reader = new FileReader();
+    reader.onload = function(){
+      var j;
+      try { j = JSON.parse(String(reader.result || "")); } catch (e) { importStatus("Esse arquivo não é uma cópia válida do Caixa da Família."); return; }
+      var arr = Array.isArray(j) ? j : (j && Array.isArray(j.lancamentos) ? j.lancamentos : []);
+      var ok = [], bad = 0;
+      arr.forEach(function(x){ var c = cleanImported(x); if (c) ok.push(c); else bad++; });
+      var have = {};
+      S.docs.forEach(function(d){ have[d.id] = true; });
+      var novos = ok.filter(function(d){ return !have[d.id]; });
+      if (!ok.length){ importStatus("Não encontrei lançamentos nesse arquivo."); return; }
+      if (!novos.length){ importStatus("Os " + ok.length + " lançamentos desse arquivo já estão no app. Nada a importar."); return; }
+      importItems = novos;
+      var total = novos.reduce(function(s, d){ return s + (d.tipo === "entrada" ? d.valor : d.tipo === "saida" ? -d.valor : 0); }, 0);
+      importStatus(novos.length + (novos.length === 1 ? " lançamento novo encontrado" : " lançamentos novos encontrados") +
+        (ok.length > novos.length ? " (" + (ok.length - novos.length) + " já estavam no app)" : "") +
+        (bad ? ". " + bad + " linha(s) com problema serão ignoradas" : "") +
+        ". Saldo desses lançamentos: " + fmt(total) + ".");
+      $("#imp-btn").textContent = "Importar " + novos.length + (novos.length === 1 ? " lançamento" : " lançamentos");
+      $("#imp-btn").hidden = false;
+    };
+    reader.onerror = function(){ importStatus("Não consegui ler o arquivo. Tente de novo."); };
+    reader.readAsText(f);
+  });
+  $("#imp-btn").addEventListener("click", function(){
+    if (!importItems || !importItems.length) return;
+    var btn = this, itens = importItems.slice(), feitos = 0;
+    btn.disabled = true;
+    var chain = Promise.resolve();
+    for (var i = 0; i < itens.length; i += 50){
+      (function(lote){
+        chain = chain.then(function(){
+          importStatus("Importando… " + feitos + " de " + itens.length);
+          return api("POST", "/api/lancamentos", { lancamentos: lote }).then(function(j){ (j.lancamentos || []).forEach(upsertLocal); feitos += lote.length; });
+        });
+      })(itens.slice(i, i + 50));
+    }
+    chain.then(function(){
+      saveCache(); resetImport(); render();
+      toast(feitos + (feitos === 1 ? " lançamento importado." : " lançamentos importados."));
+      refresh();
+    }).catch(function(e){
+      importStatus("Parei em " + feitos + " de " + itens.length + ". " + (e && e.message ? e.message : "Tente de novo."));
+      if (feitos) { saveCache(); render(); }
+    }).finally(function(){ btn.disabled = false; });
+  });
+  $("#exp-btn").addEventListener("click", function(){
+    var dados = { app: "caixa-da-familia", versao: 1, exportadoEm: new Date().toISOString(), config: S.cfg, lancamentos: S.docs.map(stripLocal) };
+    var blob = new Blob([JSON.stringify(dados, null, 2)], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "caixa-da-familia-" + todayISO() + ".json";
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+    toast("Cópia com " + S.docs.length + " lançamentos gerada.");
   });
 
   /* ================= login ================= */
