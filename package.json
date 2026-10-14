@@ -5,6 +5,6 @@
   "description": "Controle financeiro da família: Casa, Salão Samia Lima e Base Mídia.",
   "type": "module",
   "engines": {
-    "node": ">=18"
+    "node": "22.x"
   }
 }
