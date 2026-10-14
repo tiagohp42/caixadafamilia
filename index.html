@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Caixa da Família</title>
+<meta name="description" content="Finanças da Casa, do Salão Samia Lima e da Base Mídia num só lugar.">
+<meta name="theme-color" content="#1D5C47" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12352A" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Caixa">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/app.css">
+<script src="/app.js" defer></script>
+</head>
+<body>
+
+<div id="boot" class="boot" aria-live="polite">
+  <img src="/icons/icon-192.png" alt="" width="64" height="64">
+  <p>Abrindo o caixa…</p>
+</div>
+
+<!-- Entrada -->
+<section id="loginView" class="login" hidden>
+  <form id="loginForm" class="logincard" novalidate>
+    <img class="loginlogo" src="/icons/icon-192.png" alt="" width="72" height="72">
+    <h1>Caixa da Família</h1>
+    <p class="sub">Entre para ver e lançar as finanças da Casa, do Salão e da Base Mídia.</p>
+    <div class="field">
+      <label for="lg-user">Usuário</label>
+      <input id="lg-user" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="next" placeholder="tiago ou samia">
+    </div>
+    <div class="field">
+      <label for="lg-pass">Senha</label>
+      <div class="passwrap">
+        <input id="lg-pass" name="password" type="password" autocomplete="current-password" enterkeyhint="go">
+        <button type="button" id="lg-show" class="textbtn" aria-pressed="false">Mostrar</button>
+      </div>
+    </div>
+    <p class="err" id="lg-err" role="alert" hidden></p>
+    <button type="submit" class="primary wide" id="lg-btn">Entrar</button>
+  </form>
+</section>
+
+<!-- App -->
+<div id="appView" hidden>
+  <header class="appbar">
+    <div class="appbar-in">
+      <div class="brandrow">
+        <h1>Caixa da Família</h1>
+        <div class="barbtns">
+          <span class="offpill" id="offPill" hidden>Sem internet</span>
+          <button type="button" class="barbtn" id="syncBtn" aria-label="Atualizar dados">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button type="button" class="barbtn" id="openSettings" aria-label="Ajustes">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="6" r="2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="12" r="2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="18" cy="18" r="2" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+          </button>
+        </div>
+      </div>
+      <nav class="monthnav" aria-label="Período">
+        <button type="button" id="prevMonth" aria-label="Período anterior">‹</button>
+        <span class="label" id="monthLabel" aria-live="polite">—</span>
+        <button type="button" id="nextMonth" aria-label="Próximo período">›</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="install" id="installCard" hidden>
+      <div class="install-txt">
+        <b>Instale o Caixa no celular</b>
+        <span id="installMsg"></span>
+      </div>
+      <div class="install-btns">
+        <button type="button" class="primary small" id="installBtn" hidden>Instalar</button>
+        <button type="button" class="textbtn" id="installClose">Agora não</button>
+      </div>
+    </div>
+
+    <div class="filters" role="group" aria-label="Mostrar">
+      <button type="button" class="chip" data-filter="tudo" aria-pressed="true"><i class="dot k-tudo"></i>Tudo</button>
+      <button type="button" class="chip" data-filter="casa" aria-pressed="false"><i class="dot k-casa"></i>Casa</button>
+      <button type="button" class="chip" data-filter="salao" aria-pressed="false"><i class="dot k-salao"></i>Salão</button>
+      <button type="button" class="chip" data-filter="base" aria-pressed="false"><i class="dot k-base"></i>Base Mídia</button>
+    </div>
+
+    <div class="notice" id="notice" role="status" hidden></div>
+
+    <section class="summary" id="summary" aria-label="Resumo"></section>
+
+    <section id="alertSection" hidden>
+      <div class="sechead"><h2>Alertas de gasto</h2><span class="meta" id="alertMeta"></span></div>
+      <ul class="alerts" id="alertList"></ul>
+    </section>
+
+    <section id="pendSection" hidden>
+      <div class="sechead"><h2>A pagar e a receber</h2><span class="meta" id="pendMeta"></span></div>
+      <div class="card"><ul class="list" id="pendList"></ul></div>
+    </section>
+
+    <section class="charts">
+      <div class="panel">
+        <h2 id="catTitle">Para onde foi o dinheiro</h2>
+        <div class="cats" id="cats"></div>
+      </div>
+      <div class="panel">
+        <h2>Últimos 6 períodos</h2>
+        <div id="trend"></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sechead">
+        <h2>Extrato do período</h2>
+        <button type="button" class="ghost" id="copyFixed">Trazer contas fixas</button>
+      </div>
+      <div class="card" id="listCard"></div>
+    </section>
+  </main>
+
+  <button type="button" class="fab" id="fab"><span aria-hidden="true">+</span>Lançar</button>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden><span id="toastMsg"></span><button type="button" class="toastbtn" id="toastBtn" hidden></button></div>
+
+<!-- Lançamento -->
+<div class="sheet" id="sheet" hidden>
+  <div class="scrim" data-close></div>
+  <form class="sheetbody" id="form" novalidate aria-labelledby="formTitle">
+    <div class="sheethead">
+      <h2 id="formTitle">Novo lançamento</h2>
+      <button type="button" class="iconbtn" data-close aria-label="Fechar">✕</button>
+    </div>
+    <div class="sheetscroll">
+      <fieldset class="seg">
+        <legend class="sr">Tipo de lançamento</legend>
+        <label><input type="radio" name="tipo" id="t-saida" value="saida" checked><span>Saída</span></label>
+        <label><input type="radio" name="tipo" id="t-entrada" value="entrada"><span>Entrada</span></label>
+        <label><input type="radio" name="tipo" id="t-retirada" value="retirada"><span>Pagar dono</span></label>
+      </fieldset>
+      <fieldset class="seg" id="ladoField">
+        <legend class="sr">De quem é</legend>
+        <label><input type="radio" name="lado" id="l-casa" value="casa" checked><span>Casa</span></label>
+        <label><input type="radio" name="lado" id="l-salao" value="salao"><span>Salão</span></label>
+        <label><input type="radio" name="lado" id="l-base" value="base"><span>Base Mídia</span></label>
+      </fieldset>
+      <fieldset class="seg" id="empField" hidden>
+        <legend class="sr">Qual empresa paga</legend>
+        <label><input type="radio" name="empresa" id="e-salao" value="salao" checked><span>Salão → Samia</span></label>
+        <label><input type="radio" name="empresa" id="e-base" value="base"><span>Base Mídia → Tiago</span></label>
+      </fieldset>
+      <p class="hint" id="retHint" hidden></p>
+      <div class="field">
+        <label for="f-valor">Valor</label>
+        <div class="money"><span>R$</span><input id="f-valor" inputmode="decimal" autocomplete="off" placeholder="0,00" enterkeyhint="done"></div>
+      </div>
+      <div class="two">
+        <div class="field"><label for="f-data">Data</label><input type="date" id="f-data"></div>
+        <div class="field"><label for="f-cat">Categoria</label><select id="f-cat"></select></div>
+      </div>
+      <div class="field">
+        <label for="f-desc">Descrição <span class="opt">(opcional)</span></label>
+        <input id="f-desc" maxlength="120" autocomplete="off" placeholder="Ex.: conta de luz, mensalidade de cliente" enterkeyhint="done">
+      </div>
+      <fieldset class="seg">
+        <legend class="sr">Situação</legend>
+        <label><input type="radio" name="status" id="s-pago" value="pago" checked><span id="s-pago-l">Pago</span></label>
+        <label><input type="radio" name="status" id="s-pend" value="pendente"><span id="s-pend-l">A pagar</span></label>
+      </fieldset>
+      <div class="field" id="pagoField">
+        <label for="f-pago"><span id="f-pago-l">Pago em</span> <span class="opt">(só se foi em outro dia)</span></label>
+        <input type="date" id="f-pago">
+      </div>
+      <label class="check"><input type="checkbox" id="f-fixo"><span>Conta fixa, repete todo mês</span></label>
+      <p class="err" id="formErr" role="alert" hidden></p>
+    </div>
+    <div class="actions">
+      <button type="button" class="dangerbtn" id="delBtn" hidden>Excluir</button>
+      <button type="submit" class="primary" id="saveBtn">Salvar</button>
+    </div>
+  </form>
+</div>
+
+<!-- Liquidar -->
+<div class="sheet" id="liqSheet" hidden>
+  <div class="scrim" data-close></div>
+  <form class="sheetbody" id="liqForm" novalidate aria-labelledby="liqTitle">
+    <div class="sheethead">
+      <h2 id="liqTitle">Liquidar conta</h2>
+      <button type="button" class="iconbtn" data-close aria-label="Fechar">✕</button>
+    </div>
+    <div class="sheetscroll">
+      <dl class="rows" id="liqInfo"></dl>
+      <div class="two">
+        <div class="field"><label for="q-data" id="q-data-l">Data do pagamento</label><input type="date" id="q-data"></div>
+        <div class="field"><label for="q-valor" id="q-valor-l">Valor pago</label><div class="money"><span>R$</span><input id="q-valor" inputmode="decimal" autocomplete="off" enterkeyhint="done"></div></div>
+      </div>
+      <p class="hint">Se pagou com juros ou desconto, corrija o valor. O valor previsto fica guardado no lançamento.</p>
+      <p class="err" id="liqErr" role="alert" hidden></p>
+    </div>
+    <div class="actions"><button type="submit" class="primary" id="liqSave">Liquidar</button></div>
+  </form>
+</div>
+
+<!-- Ajustes -->
+<div class="sheet" id="setSheet" hidden>
+  <div class="scrim" data-close></div>
+  <form class="sheetbody" id="setForm" novalidate aria-labelledby="setTitle">
+    <div class="sheethead">
+      <h2 id="setTitle">Ajustes</h2>
+      <button type="button" class="iconbtn" data-close aria-label="Fechar">✕</button>
+    </div>
+    <div class="sheetscroll">
+      <div class="setsec first">
+        <h3>Fechamento do mês</h3>
+        <p>Dia em que começa cada período. Com 10, o período vai do dia 10 até o dia 9 do mês seguinte. Use 1 para seguir o mês do calendário.</p>
+        <div class="pct"><label for="p-dia">Começa no dia</label><div class="inp"><input id="p-dia" inputmode="numeric" maxlength="2"></div></div>
+      </div>
+
+      <div class="setsec">
+        <h3>Caixa inicial</h3>
+        <p id="caixaHelp">Quanto tinha na conta no dia em que começaram a usar o app. Preencha uma vez; o saldo em conta parte daqui.</p>
+        <div class="two">
+          <div class="field"><label for="c-valor">Valor na conta</label><div class="money"><span>R$</span><input id="c-valor" inputmode="decimal" autocomplete="off" placeholder="0,00"></div></div>
+          <div class="field"><label for="c-data">Dia</label><input type="date" id="c-data"></div>
+        </div>
+      </div>
+
+      <div class="setsec">
+        <h3>Pagamento dos donos</h3>
+        <p>Do lucro de cada empresa, quanto fica guardado no caixa dela. O resto vira o pagamento sugerido para o dono.</p>
+        <div class="pct"><label for="r-salao">Salão Samia Lima: fica no caixa</label><div class="inp"><input id="r-salao" inputmode="decimal" maxlength="5"><span>%</span></div></div>
+        <div class="pct"><label for="r-base">Base Mídia: fica no caixa</label><div class="inp"><input id="r-base" inputmode="decimal" maxlength="5"><span>%</span></div></div>
+      </div>
+
+      <div class="setsec">
+        <h3>Dízimo</h3>
+        <p>Calculado sobre tudo que vocês recebem: salário da Talevi, rendas extras e o que o salão e a Base Mídia pagam a vocês.</p>
+        <div class="pct"><label for="d-pct">Porcentagem do dízimo</label><div class="inp"><input id="d-pct" inputmode="decimal" maxlength="5"><span>%</span></div></div>
+      </div>
+
+      <div class="setsec">
+        <h3>Limites de gasto por período</h3>
+        <p>Deixe em branco para não ter limite. O app avisa quando uma categoria chega a 80% e quando passa do limite. Sem limite, ele avisa se o gasto ficar bem acima da média dos últimos períodos.</p>
+        <div id="limGroups" class="limgroups"></div>
+      </div>
+
+      <div class="setsec">
+        <h3>Conta</h3>
+        <p id="whoami"></p>
+        <button type="button" class="ghost" id="logoutBtn">Sair deste aparelho</button>
+      </div>
+      <p class="err" id="setErr" role="alert" hidden></p>
+    </div>
+    <div class="actions"><button type="submit" class="primary" id="setSave">Salvar ajustes</button></div>
+  </form>
+</div>
+
+</body>
+</html>
