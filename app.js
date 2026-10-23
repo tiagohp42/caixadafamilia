@@ -25,7 +25,13 @@
     },
     retirada: ["Pró-labore", "Retirada extra"]
   };
+  // Dinheiro que só muda de conta (de outra conta sua, Pix com a Samia): mexe no saldo em conta,
+  // mas não conta como renda, gasto, faturamento nem base do dízimo.
+  var TRANSF = "Transferência entre contas";
+  ["casa", "salao", "base"].forEach(function(l){ CATS[l].entrada.push(TRANSF); CATS[l].saida.push(TRANSF); });
+  function isTransf(d){ return d.categoria === TRANSF && d.tipo !== "retirada"; }
   var HINTS = {
+    "Transferência entre contas": "não conta como renda nem gasto",
     "Salário Talevi": "pagamento do mês",
     "Moradia": "aluguel, financiamento, condomínio",
     "Contas da casa": "luz, água, internet, celular, gás",
@@ -219,7 +225,7 @@
       if (f === d.empresa) return { in: 0, out: v };
       return { in: 0, out: 0 };
     }
-    if (!inFilter(d, f)) return { in: 0, out: 0 };
+    if (!inFilter(d, f) || isTransf(d)) return { in: 0, out: 0 };
     return d.tipo === "entrada" ? { in: v, out: 0 } : { in: 0, out: v };
   }
   function signFor(d){
@@ -228,9 +234,10 @@
     return S.filter === "casa" ? 1 : S.filter === d.empresa ? -1 : 0;
   }
   function totals(docs){
-    var t = { in: { casa: 0, salao: 0, base: 0 }, out: { casa: 0, salao: 0, base: 0 }, ret: { salao: 0, base: 0 }, aPagar: 0, aReceber: 0 };
+    var t = { in: { casa: 0, salao: 0, base: 0 }, out: { casa: 0, salao: 0, base: 0 }, ret: { salao: 0, base: 0 }, aPagar: 0, aReceber: 0, trIn: 0, trOut: 0 };
     docs.forEach(function(d){
       var v = d.valor || 0;
+      if (isTransf(d)){ if (d.tipo === "entrada") t.trIn += v; else t.trOut += v; return; }
       if (d.tipo === "retirada") t.ret[d.empresa] += v;
       else if (LADOS[d.lado]){ if (d.tipo === "entrada") t.in[d.lado] += v; else t.out[d.lado] += v; }
       if (d.status === "pendente"){
@@ -242,7 +249,7 @@
   }
   function spendByCat(docs){
     var m = {};
-    docs.forEach(function(d){ if (d.tipo === "saida"){ var k = d.lado + "|" + (d.categoria || "Outros"); m[k] = (m[k] || 0) + (d.valor || 0); } });
+    docs.forEach(function(d){ if (d.tipo === "saida" && !isTransf(d)){ var k = d.lado + "|" + (d.categoria || "Outros"); m[k] = (m[k] || 0) + (d.valor || 0); } });
     return m;
   }
   function ownerPay(e, t){
@@ -321,8 +328,10 @@
     var notes = [];
     if (t.aPagar) notes.push(fmt(t.aPagar) + " ainda a pagar");
     if (t.aReceber) notes.push(fmt(t.aReceber) + " ainda a receber");
+    var saldoItems = [["Entrou", fmt(entrou)], ["Saiu", fmt(saiu)]];
+    if (t.trIn || t.trOut) saldoItems.push(["Transferências entre contas (fora da conta)", (t.trIn - t.trOut >= 0 ? "+ " : "− ") + fmt(Math.abs(t.trIn - t.trOut)), "sep"]);
     tiles.push(tile({ tone: "var(--accent)", eyebrow: "Saldo do período · conta toda", value: entrou - saiu,
-      items: [["Entrou", fmt(entrou)], ["Saiu", fmt(saiu)]],
+      items: saldoItems,
       note: notes.length ? "Inclui " + notes.join(" e ") + "." : (monthDocs.length ? "Tudo pago e recebido." : null) }));
 
     var dz = dizimoInfo(t, monthDocs), dp = dizimoPct();
@@ -412,7 +421,9 @@
 
   function rowFor(d, mode){
     var sign = signFor(d);
-    var amt = el("span", { class: "amt " + (sign > 0 ? "pos" : sign < 0 ? "neg" : "neu"), text: (sign > 0 ? "+ " : sign < 0 ? "− " : "⇄ ") + fmt(d.valor) });
+    var amt = isTransf(d)
+      ? el("span", { class: "amt neu", text: "⇄ " + (d.tipo === "entrada" ? "+" : "−") + " " + fmt(d.valor) })
+      : el("span", { class: "amt " + (sign > 0 ? "pos" : sign < 0 ? "neg" : "neu"), text: (sign > 0 ? "+ " : sign < 0 ? "− " : "⇄ ") + fmt(d.valor) });
     var meta = el("span", { class: "rmeta" },
       el("span", { text: [d.categoria, ladoLabel(d)].filter(Boolean).join(" · ") }),
       d.fixo ? el("span", { class: "pill fixa", text: "fixa" }) : null,

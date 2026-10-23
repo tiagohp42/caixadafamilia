@@ -72,6 +72,7 @@ Cada pessoa entra uma vez em cada aparelho. O login fica guardado por 90 dias.
 - **Trocar uma senha:** mude a variável `SENHA_...` na Vercel e faça **Redeploy**. Todas as sessões abertas com a senha antiga são encerradas.
 - **Incluir outra pessoa:** crie `SENHA_NOME` e faça **Redeploy**.
 - **Sair de um aparelho:** em **Ajustes → Sair deste aparelho**. A cópia local dos dados é apagada.
+- **Transferências:** dinheiro que só muda de conta (de outra conta sua, Pix com a Samia) vai na categoria **Transferência entre contas**. Ela entra no saldo em conta, mas não conta como renda, gasto nem base do dízimo.
 - **Sem internet:** o app abre e mostra os últimos dados salvos no aparelho. Lançar e liquidar precisam de internet.
 - **Os dois celulares:** os dados se atualizam ao abrir o app, a cada 30 segundos com ele aberto e pelo botão de atualizar no topo.
 
